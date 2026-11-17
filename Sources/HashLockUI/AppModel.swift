@@ -144,7 +144,6 @@ public final class AppModel {
         hasRecoveryKey = await vault?.headerHasRecoveryKey() ?? false
         kdfParameters = nil
         phase = .locked
-        await refreshAttempts()
     }
 
     /// Makes a new vault and opens it; the vault open until now is locked.
@@ -177,41 +176,6 @@ public final class AppModel {
         }
     }
 
-    /// Incorrect passwords left before the current vault is erased, when
-    /// that setting is on and at least one has been typed.
-    public private(set) var attemptsLeft: Int?
-
-    private var eraseLimit: Int? {
-        Preferences.defaults.bool(forKey: Preferences.eraseAfterFailuresKey)
-            ? max(Preferences.defaults.integer(forKey: Preferences.eraseAfterLimitKey), 1) : nil
-    }
-
-    /// Reads the count of incorrect passwords for the lock screen.
-    public func refreshAttempts() async {
-        guard let limit = eraseLimit, let vault, phase == .locked else { attemptsLeft = nil; return }
-        let n = await vault.failedAttempts()
-        attemptsLeft = n > 0 ? max(limit - n, 0) : nil
-    }
-
-    /// An incorrect password or phrase for `v`: counted, and with the
-    /// setting on, `v` is erased once the limit is reached. Only ever the
-    /// vault the password was typed for.
-    private func failedAttempt(on v: Vault) async {
-        guard let limit = eraseLimit else { return }
-        let n = await v.recordFailedAttempt()
-        guard v === vault else { return }
-        if n >= limit {
-            let name = current?.name ?? "The vault"
-            attemptsLeft = nil
-            if await destroyVault() {
-                notice = Notice(title: "“\(name)” was erased",
-                                message: "\(limit) incorrect passwords in a row were typed, as Settings › Lock allow. The vault and everything in it are gone.")
-            }
-        } else {
-            attemptsLeft = limit - n
-        }
-    }
-
     /// `false` for a wrong password (the lock screen shakes); other errors
     /// are shown as a notice.
     public func unlock(password: String) async -> Bool {
@@ -221,7 +185,6 @@ public final class AppModel {
         do {
             return await opened(v, catalog: try await v.unlock(password: password))
         } catch VaultError.wrongPassword {
-            await failedAttempt(on: v)
             return false
         } catch {
             show(error, title: "Hash Lock could not be unlocked")
@@ -238,7 +201,6 @@ public final class AppModel {
             mustSetPassword = true
             return true
         } catch VaultError.wrongPassword {
-            await failedAttempt(on: v)
             return false
         } catch {
             show(error, title: "Hash Lock could not be unlocked")
@@ -250,12 +212,10 @@ public final class AppModel {
     /// meanwhile, `v` is locked again instead.
     @discardableResult
     private func opened(_ v: Vault, catalog: Catalog) async -> Bool {
-        await v.resetFailedAttempts()
         guard v === vault else {
             await v.lock()
             return false
         }
-        attemptsLeft = nil
         items = catalog.items
         hasRecoveryKey = await v.hasRecoveryKey
         kdfParameters = await v.kdfParameters
@@ -605,9 +565,8 @@ public final class AppModel {
     }
 
     /// A password check outside the lock screen (deleting, uninstalling).
-    /// While locked a wrong password counts toward the erase limit like any
-    /// other attempt, so it cannot be used to guess without limit. Only a
-    /// wrong password counts: any other error is shown, and is no answer.
+    /// `false` for a wrong password; any other error is shown, and is no
+    /// answer either way.
     public func checkPassword(_ password: String) async -> Bool {
         guard let v = vault, !working else { return false }
         working = true
@@ -616,7 +575,6 @@ public final class AppModel {
             try await v.checkPassword(password)
             return true
         } catch VaultError.wrongPassword {
-            if phase == .locked { await failedAttempt(on: v) }
             return false
         } catch {
             show(error, title: "The password could not be checked")

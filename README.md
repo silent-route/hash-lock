@@ -49,7 +49,7 @@ In the clear: each vault's name (so you can pick one before unlocking), the pass
 - The note editor has spell check, autocorrect, completion, data detectors and Writing Tools off, so your text isn't sent to system services.
 - One copy of the app runs, and a vault opens in one copy at a time.
 
-**Locking.** After 15 minutes idle, on sleep, screen lock, screen saver and user switch; all of it is adjustable in Settings › Lock. Settings that weaken protection can only be changed with a vault unlocked, and locking closes any sheet showing vault data. Optionally (off by default) a vault is erased after a set number of wrong passwords in a row. That only limits guessing inside the app.
+**Locking.** After 15 minutes idle, on sleep, screen lock, screen saver and user switch; all of it is adjustable in Settings › Lock. Settings that weaken protection can only be changed with a vault unlocked, and locking closes any sheet showing vault data. There's no limit on wrong passwords: anyone with a copy of the files could guess elsewhere anyway, so the real limit is Argon2id and your password.
 
 **Limits**
 - Malware running as you while a vault is open can read the screen or log keys, as with any app.

@@ -226,9 +226,6 @@ struct VaultGuard: ViewModifier {
 
 struct LockSettings: View {
     let model: AppModel
-    @AppStorage(Preferences.eraseAfterFailuresKey) private var erase = false
-    @AppStorage(Preferences.eraseAfterLimitKey) private var eraseLimit = Preferences.eraseAfterLimitDefault
-    @State private var confirmErase = false
     @AppStorage(Preferences.idleLockKey) private var idle = Preferences.idleLockDefault
     @AppStorage(Preferences.backgroundLockKey) private var background = 0
     @AppStorage(Preferences.lockOnSleepKey) private var sleep = true
@@ -255,26 +252,6 @@ struct LockSettings: View {
                 Toggle("You switch to another user", isOn: $userSwitch)
                 Toggle("The Hash Lock window is closed", isOn: $windowClose)
             }
-            Section {
-                Toggle("Erase a vault after too many incorrect passwords", isOn: Binding(
-                    get: { erase },
-                    set: { on in if on { confirmErase = true } else { erase = false } }))
-                if erase {
-                    Picker("Incorrect passwords allowed", selection: $eraseLimit) {
-                        ForEach(Preferences.eraseAfterLimitChoices, id: \.self) { Text("\($0)").tag($0) }
-                    }
-                }
-            } header: {
-                Text("Incorrect Passwords")
-            } footer: {
-                Text("Counted per vault, in a row; unlocking resets the count, and the lock screen warns before the last attempts. This stops guessing in Hash Lock, not guessing at a copy of the vault's files on another computer: against that, only a strong password helps.")
-                    .formFooter()
-            }
-        }
-        .confirmationDialog("Erase vaults after incorrect passwords?", isPresented: $confirmErase) {
-            Button("Turn On", role: .destructive) { erase = true }
-        } message: {
-            Text("Anyone at this Mac could then erase a vault on purpose by typing wrong passwords, and a vault erased this way cannot be recovered — not even with its recovery key. Keep a backup of the vault's folder.")
         }
         .formStyle(.grouped)
         .modifier(VaultGuard(model: model))

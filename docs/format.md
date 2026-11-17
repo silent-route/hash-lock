@@ -10,7 +10,6 @@ Everything Hash Lock keeps is in its sandbox container:
     catalog          the encrypted item list
     blobs/xx/<id>    one encrypted blob per note body or file
     .lock            held with flock(2) while the vault is unlocked, so one copy of the app opens it at a time
-    attempts         the count of wrong passwords in a row, for the optional erase setting
 ```
 
 ## Keys
@@ -63,4 +62,4 @@ end: path length 0
 BLAKE2b-256 of everything before it
 ```
 
-Only `header.json`, `info.json`, `catalog` and `blobs/xx/<hex>` are accepted; anything else, a repeated path, a size past the end of the file or a wrong checksum refuses the whole file. The checksum catches a copy damaged on the way; what keeps the vault safe is its own encryption. An import is unpacked into a hidden folder beside the vaults and moved into place only once all of it checks out. The count of incorrect passwords is not part of the file.
+Only `header.json`, `info.json`, `catalog` and `blobs/xx/<hex>` are accepted; anything else, a repeated path, a size past the end of the file or a wrong checksum refuses the whole file. The checksum catches a copy damaged on the way; what keeps the vault safe is its own encryption. An import is unpacked into a hidden folder beside the vaults and moved into place only once all of it checks out.

@@ -14,7 +14,6 @@ import Testing
         let (entry, vault) = try await here.create(name: "Work", password: "pw", parameters: .minimum)
         let item = try await vault.addItem(kind: .note, title: "VPN", body: NoteBody(text: "secret"),
                                            files: [FileImport(name: "k", typeIdentifier: nil, source: .data(Data(randomBytes(90_000))))])
-        _ = try await vault.recordFailedAttempt()
         let file = dir.appendingPathComponent("Work.hashlock")
         try await vault.exportArchive(to: file)
 
@@ -36,8 +35,6 @@ import Testing
         #expect(catalog.items.map(\.id) == [item.id])
         #expect(try await copy.body(of: item.id).text == "secret")
         #expect(try await copy.data(of: catalog.items[0].attachments[0], limit: .max).count == 90_000)
-        // The count of incorrect passwords stays on the Mac it was made on.
-        #expect(await copy.failedAttempts() == 0)
     }
 
     @Test func replacingAnExistingVault() async throws {

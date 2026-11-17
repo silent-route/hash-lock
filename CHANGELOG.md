@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1-beta
+
+- Removed the option to erase a vault after a number of wrong passwords. It only limited guessing inside the app: anyone with a copy of the vault's files can guess elsewhere as long as they like, and the app itself can be patched to skip the count. What actually stops guessing is Argon2id and a good password. The option also let anyone at the Mac wipe a vault on purpose.
+
 ## 1.0.0-beta
 
 First public release.

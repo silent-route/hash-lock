@@ -510,18 +510,6 @@ func flipByte(at offset: Int, in url: URL) throws {
         #expect(try await v.verify().unreferenced == 0)
     }
 
-    @Test func failedAttemptsAreCounted() async throws {
-        let t = TempVault()
-        let v = try await t.created()
-        #expect(await v.failedAttempts() == 0)
-        #expect(await v.recordFailedAttempt() == 1)
-        #expect(await v.recordFailedAttempt() == 2)
-        // A new Vault on the same folder (a relaunch) sees the count.
-        #expect(await Vault(root: v.root).failedAttempts() == 2)
-        await v.resetFailedAttempts()
-        #expect(await v.failedAttempts() == 0)
-    }
-
     @Test func destroy() async throws {
         let t = TempVault()
         let v = try await t.created()

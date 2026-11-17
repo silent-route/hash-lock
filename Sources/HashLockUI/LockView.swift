@@ -58,15 +58,6 @@ struct LockView: View {
                 .foregroundStyle(wrong ? .red : .secondary)
                 .padding(.top, 8)
                 .accessibilityHidden(!wrong && !model.working)
-            if let left = model.attemptsLeft {
-                Label(left == 1 ? "One more incorrect password erases this vault."
-                                : "\(left) more incorrect passwords erase this vault.",
-                      systemImage: "exclamationmark.triangle.fill")
-                    .font(.callout)
-                    .foregroundStyle(.orange)
-                    .padding(.top, 4)
-            }
-
             if model.hasRecoveryKey {
                 Button("Use Recovery Key…") { showRecovery = true }
                     .buttonStyle(.link)

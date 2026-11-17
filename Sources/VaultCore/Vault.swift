@@ -206,33 +206,6 @@ public actor Vault {
         guard slot.open(with: kek, vaultID: h.vaultID) != nil else { throw VaultError.wrongPassword }
     }
 
-    // MARK: Incorrect passwords
-
-    var attemptsURL: URL { root.appendingPathComponent("attempts") }
-
-    /// Incorrect passwords (or recovery phrases) since the last unlock, for
-    /// the optional erase-after-N setting. Kept beside the vault, so the
-    /// count holds across launches; it is a guard against guessing in the
-    /// app, not against a copy of the files guessed at elsewhere.
-    public func failedAttempts() -> Int {
-        guard let data = try? Data(contentsOf: attemptsURL),
-              let n = Int(String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines))
-        else { return 0 }
-        return max(n, 0)
-    }
-
-    /// Counts one more incorrect attempt and returns the new count.
-    @discardableResult
-    public func recordFailedAttempt() -> Int {
-        let n = failedAttempts() + 1
-        try? AtomicWriter.write(Data(String(n).utf8), to: attemptsURL)
-        return n
-    }
-
-    public func resetFailedAttempts() {
-        unlink(attemptsURL.path)
-    }
-
     // MARK: Password and recovery key
 
     /// Replaces the password (and the derivation settings).

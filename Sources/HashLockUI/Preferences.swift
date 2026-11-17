@@ -56,12 +56,6 @@ public enum Preferences {
     public static let backgroundLockKey = "backgroundLockMinutes"
     public static let backgroundLockChoices = [0, 1, 5, 15, 30, 60]
 
-    /// Erase a vault after this many incorrect passwords in a row; off by default.
-    public static let eraseAfterFailuresKey = "eraseAfterFailures"
-    public static let eraseAfterLimitKey = "eraseAfterLimit"
-    public static let eraseAfterLimitChoices = [3, 5, 10, 20, 50]
-    public static let eraseAfterLimitDefault = 10
-
     // Clipboard
     /// Seconds before a copied value is cleared from the clipboard; 0 is never.
     public static let clipboardClearKey = "clipboardClearSeconds"
@@ -93,8 +87,6 @@ public enum Preferences {
             lockOnScreenLockKey: true,
             lockOnUserSwitchKey: true,
             lockOnWindowCloseKey: false,
-            eraseAfterFailuresKey: false,
-            eraseAfterLimitKey: eraseAfterLimitDefault,
             backgroundLockKey: 0,
             clipboardClearKey: clipboardClearDefault,
             clipboardLocalOnlyKey: true,

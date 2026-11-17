@@ -78,7 +78,7 @@ public enum VaultArchive {
         let blobs = root.appendingPathComponent("blobs")
         for dir in ((try? fm.contentsOfDirectory(atPath: blobs.path)) ?? []).sorted() {
             for name in ((try? fm.contentsOfDirectory(atPath: blobs.appendingPathComponent(dir).path)) ?? []).sorted() {
-                let p = "blobs/\(dir)/\(name)"  // .lock and attempts stay behind
+                let p = "blobs/\(dir)/\(name)"
                 if isVaultPath(p) { paths.append(p) }
             }
         }
