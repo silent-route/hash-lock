@@ -2,9 +2,8 @@
 # with a ready-to-use disk image. Tags with a suffix (-alpha, -beta) are
 # marked as pre-releases.
 #
-# The app is signed with the project's own certificate, from the secrets
-# HL_SIGNING_P12 and HL_SIGNING_PASSWORD (see scripts/signing.sh): macOS ties
-# Hash Lock's data to it, so every release must carry the same one.
+# The app is signed with a self-signed certificate made on the runner (see
+# scripts/signing.sh). No key is stored with the repository.
 name: Release
 
 on:
@@ -25,18 +24,11 @@ jobs:
           fetch-depth: 0
       - name: Xcode 26
         run: sudo xcode-select -s "$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)" && swift --version
-      - name: Signing identity present
-        env:
-          HL_SIGNING_P12: ${{ secrets.HL_SIGNING_P12 }}
-        run: '[ -n "$HL_SIGNING_P12" ] || { echo "HL_SIGNING_P12 is not set: a release signed with a new certificate would not open existing vaults" >&2; exit 1; }'
       - name: libsodium
         run: scripts/fetch-libsodium.sh
       - name: Tests
         run: scripts/test.sh
       - name: Build the universal app
-        env:
-          HL_SIGNING_P12: ${{ secrets.HL_SIGNING_P12 }}
-          HL_SIGNING_PASSWORD: ${{ secrets.HL_SIGNING_PASSWORD }}
         run: HL_VERSION="${GITHUB_REF_NAME#v}" scripts/build-app.sh
       - name: Disk image
         run: scripts/package-release.sh

@@ -8,11 +8,11 @@
 #   ~/.hashlock-signing/signing.keychain-db   (password in .../password)
 # It is created on first use.
 #
-# Keep it: macOS ties the app's sandbox container — where the vault lives —
-# to the signature. A build signed with another certificate is a different
-# app to macOS, which then asks before letting it at the old data. Back up
-# ~/.hashlock-signing, and give the release workflow the same identity
-# (see .github/workflows/release.yml).
+# macOS ties the app's sandbox container (where the vaults live) to the
+# signature: a build signed with another certificate makes macOS ask once
+# before it lets that build at the data. Keep ~/.hashlock-signing to build
+# updates of your own without that question. Release builds on GitHub make
+# a certificate of their own each time, as Silent Route's do.
 
 SIGN_DIR="$HOME/.hashlock-signing"
 SIGN_KC="$SIGN_DIR/signing.keychain-db"
@@ -44,9 +44,6 @@ CNF
   openssl pkcs12 -export -inkey "$tmp/key.pem" -in "$tmp/cert.pem" -out "$tmp/id.p12" \
     -passout "pass:$pw" -name "$SIGN_NAME" \
     -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg sha1 2>/dev/null
-  # The same identity as a .p12, for the release workflow's secret.
-  cp "$tmp/id.p12" "$SIGN_DIR/identity.p12"
-  chmod 600 "$SIGN_DIR/identity.p12"
   security create-keychain -p "$pw" "$SIGN_KC"
   security set-keychain-settings "$SIGN_KC"          # no auto-lock
   security unlock-keychain -p "$pw" "$SIGN_KC"
@@ -56,33 +53,11 @@ CNF
   echo "created signing identity in $SIGN_KC"
 }
 
-# The release workflow has no ~/.hashlock-signing: it gets the same
-# identity from two repository secrets, HL_SIGNING_P12 (identity.p12 in
-# base64) and HL_SIGNING_PASSWORD (its password), and puts it in a keychain
-# of its own.
-_sign_import() {
-  mkdir -p "$SIGN_DIR"
-  chmod 700 "$SIGN_DIR"
-  printf '%s' "$HL_SIGNING_PASSWORD" > "$SIGN_DIR/password"
-  chmod 600 "$SIGN_DIR/password"
-  local tmp
-  tmp=$(mktemp -d)
-  printf '%s' "$HL_SIGNING_P12" | base64 --decode > "$tmp/id.p12"
-  security create-keychain -p "$HL_SIGNING_PASSWORD" "$SIGN_KC"
-  security set-keychain-settings "$SIGN_KC"
-  security unlock-keychain -p "$HL_SIGNING_PASSWORD" "$SIGN_KC"
-  security import "$tmp/id.p12" -k "$SIGN_KC" -P "$HL_SIGNING_PASSWORD" -T /usr/bin/codesign >/dev/null
-  security set-key-partition-list -S apple-tool:,apple: -s -k "$HL_SIGNING_PASSWORD" "$SIGN_KC" >/dev/null
-  rm -rf "$tmp"
-}
-
 _SIGN_SAVED_LIST=""
 
 # Unlock the keychain and put it on the search list for codesign.
 sign_begin() {
-  if [ ! -f "$SIGN_KC" ]; then
-    if [ -n "${HL_SIGNING_P12:-}" ]; then _sign_import; else _sign_create; fi
-  fi
+  [ -f "$SIGN_KC" ] || _sign_create
   security unlock-keychain -p "$(cat "$SIGN_DIR/password")" "$SIGN_KC"
   _SIGN_SAVED_LIST=$(security list-keychains -d user | tr -d '"' | xargs)
   # shellcheck disable=SC2086

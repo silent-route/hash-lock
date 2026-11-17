@@ -72,7 +72,7 @@ In the clear: each vault's name (so you can pick one before unlocking), the pass
 
 Open the new disk image and drag Hash Lock over the old one. Vaults live in the app's container and aren't touched. A running copy notices the new version and offers Relaunch to Update.
 
-Every release is signed with the same certificate, and macOS ties the app's data to it. If a copy signed by someone else asks for access to Hash Lock's data, say no.
+Releases are self-signed by GitHub Actions with a new certificate each time, so after an update macOS may ask whether Hash Lock can access data from its older version. Allow it if you got the update from the Releases page here. Your vaults stay encrypted either way.
 
 ### Moving a vault
 
@@ -96,7 +96,7 @@ scripts/package-release.sh   # build/release/Hash-Lock-<version>.dmg and its SHA
 swift run ui-snapshots       # renders the windows to PNG
 ```
 
-The signing identity is created on the first build in `~/.hashlock-signing`. Back it up: an app signed with another certificate looks like a different app to macOS.
+The signing identity is created on the first build in `~/.hashlock-signing`. Keep it, and your own builds update each other without macOS asking about the data.
 
 | Directory | Contents |
 |---|---|
