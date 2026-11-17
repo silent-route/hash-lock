@@ -1,0 +1,15 @@
+# Changelog
+
+## 1.0.0-beta
+
+First public release.
+
+- Notes with fields (Login, Password, IP Address, Website, Text, Secret), free text and attached files. Password and login generators. Long values wrap so they can be read in full.
+- Crypto wallet backups with presets for Bitcoin, Monero and other coins. BIP-39 words and checksums are checked as you type.
+- Files and whole folders, symlinks included, browsed as icons, a list or columns like in Finder. Images, PDFs and text open in the app.
+- Several vaults, each with its own password and an optional 24-word recovery key.
+- Argon2id for the password, XChaCha20-Poly1305 for every note and file, each with its own key. Changing the password re-encrypts the vault under a new master key.
+- Vault export and import as one encrypted `.hashlock` file.
+- Locks on idle, sleep, screen lock and user switch. Copied values are kept off clipboard history and Universal Clipboard and cleared after 90 seconds.
+- Optional erase of a vault after a number of wrong passwords in a row.
+- Menu bar item, single instance, no network access at all.

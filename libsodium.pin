@@ -1,0 +1,6 @@
+# libsodium release built into the app (scripts/fetch-libsodium.sh).
+# The checksum is of the release tarball, whose minisign signature was checked
+# against the libsodium release key when it was pinned:
+#   RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3
+version = 1.0.22
+sha256 = adbdd8f16149e81ac6078a03aca6fc03b592b89ef7b5ed83841c086191be3349
