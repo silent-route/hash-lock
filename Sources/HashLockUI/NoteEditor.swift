@@ -267,15 +267,10 @@ struct FieldRow: View {
             .accessibilityLabel(hidden ? "Show \(field.label)" : "Hide \(field.label)")
             .opacity(showControls ? 1 : 0)
 
-            Button {
+            CopyButton(help: "Copy \(field.label)", visible: showControls) {
                 model.clipboard.copy(field.value, label: field.label, secret: field.kind.isSecret || hiddenByDefault)
-            } label: {
-                Image(systemName: "doc.on.doc")
             }
             .disabled(field.value.isEmpty)
-            .help("Copy \(field.label)")
-            .accessibilityLabel("Copy \(field.label)")
-            .opacity(showControls ? 1 : 0)
 
             Menu {
                 if field.kind == .password || field.kind == .secret {

@@ -53,6 +53,21 @@ struct RowButton: View {
     }
 }
 
+/// RowButton's copy button, with the checkmark once copied.
+struct RowCopyButton: View {
+    let help: String
+    var disabled = false
+    let copy: () -> Void
+    @Environment(\.rowHovered) private var hovered
+
+    var body: some View {
+        CopyButton(help: help, visible: hovered, copy: copy)
+            .buttonStyle(.borderless)
+            .foregroundStyle(.secondary)
+            .disabled(disabled)
+    }
+}
+
 /// A crypto wallet backup: the coin, the seed words in whichever format the
 /// wallet uses, the optional passphrase, and what helps restore it. Bitcoin
 /// keeps the derivation path, xpub and birthday; Monero the address, keys
@@ -85,13 +100,10 @@ struct WalletSection: View {
                     Toggle(isOn: $showWords) { Label(showWords ? "Hide" : "Show", systemImage: showWords ? "eye.slash" : "eye") }
                         .toggleStyle(.button)
                         .help(showWords ? "Hide the words" : "Show the words")
-                    Button {
+                    CopyButton(title: "Copy", help: "Copy all words, separated by spaces") {
                         model.clipboard.copy(wallet.words.joined(separator: " "), label: "Seed words", secret: true)
-                    } label: {
-                        Label("Copy", systemImage: "doc.on.doc")
                     }
                     .disabled(wallet.words.allSatisfy(\.isEmpty))
-                    .help("Copy all words, separated by spaces")
                 }
                 SeedWordGrid(words: $wallet.words, columns: columns,
                              concealed: !showWords, checkWords: wallet.format.usesBIP39Words)
@@ -254,7 +266,7 @@ struct SecretValue: View {
                 .textFieldStyle(.plain)
         }
         RowButton(symbol: shown ? "eye.slash" : "eye", help: shown ? "Hide" : "Show") { shown.toggle() }
-        RowButton(symbol: "doc.on.doc", help: "Copy \(label)", disabled: text.isEmpty) {
+        RowCopyButton(help: "Copy \(label)", disabled: text.isEmpty) {
             model.clipboard.copy(text, label: label, secret: true)
         }
     }
@@ -269,7 +281,7 @@ struct PublicValue: View {
 
     var body: some View {
         ValueField(text: $text, code: true)
-        RowButton(symbol: "doc.on.doc", help: "Copy \(label)", disabled: text.isEmpty) {
+        RowCopyButton(help: "Copy \(label)", disabled: text.isEmpty) {
             model.clipboard.copy(text, label: label, secret: false)
         }
     }
