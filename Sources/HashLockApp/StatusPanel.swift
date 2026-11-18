@@ -9,6 +9,14 @@ import SwiftUI
 final class StatusPanel: NSPanel, NSWindowDelegate {
     private static let gap: CGFloat = 5
     private static let margin: CGFloat = 6
+    /// How far the menu bar's highlight reaches past the item's button on
+    /// each side (measured on macOS 15: the same for the system's items and
+    /// for others, whatever their width). The system's own menus line up
+    /// with the highlight's edge, and so does the panel. Not measured on
+    /// macOS 26: there it lines up with the button, as before.
+    private static var highlightOutset: CGFloat {
+        if #available(macOS 26, *) { 0 } else { 10 }
+    }
     private static var cornerRadius: CGFloat {
         if #available(macOS 26, *) { 18 } else { 11 }
     }
@@ -47,7 +55,8 @@ final class StatusPanel: NSPanel, NSWindowDelegate {
     func show(below button: NSStatusBarButton) {
         guard let bw = button.window else { return }
         self.button = button
-        anchor = bw.convertToScreen(button.convert(button.bounds, to: nil))
+        let inButton = bw.convertToScreen(button.convert(button.bounds, to: nil))
+        anchor = inButton.insetBy(dx: -Self.highlightOutset, dy: 0)
         place()
         makeKeyAndOrderFront(nil)
         keepHighlighted()
