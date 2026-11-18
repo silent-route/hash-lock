@@ -170,6 +170,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return .terminateLater
     }
 
+    /// The panel may have been opened again while the vault was locking;
+    /// closing it ends its menu tracking, so the menu bar over a full-screen
+    /// app is not left held in place.
+    func applicationWillTerminate(_ notification: Notification) {
+        panel?.dismiss()
+    }
+
     // MARK: Main window
 
     func showMainWindow() {

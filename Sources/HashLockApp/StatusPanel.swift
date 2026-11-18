@@ -3,11 +3,12 @@ import SwiftUI
 
 /// The menu bar panel, placed as macOS places its own (Wi-Fi, Control
 /// Center): a rounded panel just under the menu bar, without an arrow. It
-/// opens to the right of its icon, or to the left when there is no room. A
-/// click elsewhere, switching apps or desktops, or Esc closes it.
+/// opens to the right of its icon, or to the left when there is no room.
+/// Over a full-screen app the menu bar stays while it is open, as it does
+/// for the system's menus. A click elsewhere, switching apps or desktops,
+/// or Esc closes it.
 @MainActor
 final class StatusPanel: NSPanel, NSWindowDelegate {
-    private static let gap: CGFloat = 5
     private static let margin: CGFloat = 6
     /// How far the menu bar's highlight reaches past the item's button on
     /// each side (measured on macOS 15: the same for the system's items and
@@ -17,13 +18,18 @@ final class StatusPanel: NSPanel, NSWindowDelegate {
     private static var highlightOutset: CGFloat {
         if #available(macOS 26, *) { 0 } else { 10 }
     }
+    /// On macOS 14–15, the corners of the system's menu bar menus (Wi-Fi,
+    /// Now Playing): measured against them, pixel by pixel.
     private static var cornerRadius: CGFloat {
-        if #available(macOS 26, *) { 18 } else { 11 }
+        if #available(macOS 26, *) { 18 } else { 6 }
     }
 
     private let host: NSView
     private weak var button: NSStatusBarButton?
+    /// The highlight's sides, and the height the panel's top edge is at.
     private var anchor: NSRect = .zero
+    private var screenFrame: NSRect = .zero
+    private var menuBarMoves: NSObjectProtocol?
     private var monitors: [Any] = []
     private var workspaceObservers: [NSObjectProtocol] = []
 
@@ -55,13 +61,41 @@ final class StatusPanel: NSPanel, NSWindowDelegate {
     func show(below button: NSStatusBarButton) {
         guard let bw = button.window else { return }
         self.button = button
-        let inButton = bw.convertToScreen(button.convert(button.bounds, to: nil))
-        anchor = inButton.insetBy(dx: -Self.highlightOutset, dy: 0)
+        screenFrame = (bw.screen ?? NSScreen.main)?.frame ?? .zero
+        updateAnchor()
         place()
         makeKeyAndOrderFront(nil)
         keepHighlighted()
+        menuTracking(true)
         watchForClose()
+        followMenuBar(bw)
         DispatchQueue.main.async { [weak self] in self?.invalidateShadow() }
+    }
+
+    /// Where the panel hangs. On macOS 14–15 the system's menus touch the
+    /// menu bar's bottom edge, which is the bottom of the item's window; on
+    /// macOS 26 they float a little below the item.
+    private func updateAnchor() {
+        guard let button, let bw = button.window else { return }
+        let inButton = bw.convertToScreen(button.convert(button.bounds, to: nil))
+        let top: CGFloat
+        if #available(macOS 26, *) { top = inButton.minY - 5 } else { top = bw.frame.minY }
+        anchor = NSRect(x: inButton.minX - Self.highlightOutset, y: min(top, screenFrame.maxY),
+                        width: inButton.width + 2 * Self.highlightOutset, height: 0)
+    }
+
+    /// Should the menu bar still slide away over a full-screen app (or come
+    /// back), the item's window moves with it, and the panel follows.
+    private func followMenuBar(_ bw: NSWindow) {
+        if let o = menuBarMoves { NotificationCenter.default.removeObserver(o) }
+        menuBarMoves = NotificationCenter.default.addObserver(
+            forName: NSWindow.didMoveNotification, object: bw, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.isVisible else { return }
+                self.updateAnchor()
+                self.place()
+            }
+        }
     }
 
     /// The button is pressed while the panel is open, as a menu's is. Mouse
@@ -83,18 +117,30 @@ final class StatusPanel: NSPanel, NSWindowDelegate {
         monitors = []
         for o in workspaceObservers { NSWorkspace.shared.notificationCenter.removeObserver(o) }
         workspaceObservers = []
+        if let o = menuBarMoves { NotificationCenter.default.removeObserver(o) }
+        menuBarMoves = nil
         orderOut(nil)
         button?.highlight(false)
+        menuTracking(false)
+    }
+
+    /// The system's menus announce that they are open and closed; while one
+    /// is open, the menu bar over a full-screen app stays instead of sliding
+    /// away when the pointer leaves it. The panel announces the same.
+    private func menuTracking(_ open: Bool) {
+        let name = open ? "com.apple.HIToolbox.beginMenuTrackingNotification"
+                        : "com.apple.HIToolbox.endMenuTrackingNotification"
+        DistributedNotificationCenter.default().post(name: .init(name), object: nil)
     }
 
     /// Sized to the content, its top under the icon.
     private func place() {
         let size = host.fittingSize
-        let screen = (NSScreen.screens.first { $0.frame.intersects(anchor) } ?? NSScreen.main)?.frame ?? .zero
+        let screen = screenFrame
         var x = anchor.minX
         if x + size.width > screen.maxX - Self.margin { x = anchor.maxX - size.width }
         x = min(max(x, screen.minX + Self.margin), screen.maxX - Self.margin - size.width)
-        let y = anchor.minY - Self.gap - size.height
+        let y = anchor.minY - size.height
         setFrame(NSRect(x: x.rounded(), y: y.rounded(), width: size.width, height: size.height), display: true)
     }
 
