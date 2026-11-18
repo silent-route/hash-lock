@@ -88,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let update = UpdateWatcher()
     private var statusItem: NSStatusItem?
     private var panel: StatusPanel?
+    private var statusClicks: Any?
     private var mainWindow: NSWindow?
     private var quitting = false
     private var observers: [NSObjectProtocol] = []
@@ -207,10 +208,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func setUpStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        // The action is for VoiceOver and other accessibility presses;
+        // clicks are taken before the button sees them (below).
         item.button?.target = self
         item.button?.action = #selector(statusItemClicked)
-        item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         statusItem = item
+        watchStatusClicks()
         let content = MenuBarView(model: model, autoLock: autoLock, update: update,
                                   openMain: { [weak self] in self?.showMainWindow() },
                                   close: { [weak self] in self?.panel?.dismiss() })
@@ -218,6 +221,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             .onGeometryChange(for: CGSize.self, of: { $0.size }) { [weak self] _ in self?.panel?.refit() }
         panel = StatusPanel(content: content)
         updateIcon()
+    }
+
+    /// Opens and closes the panel on the press of either mouse button, as
+    /// the system's menu bar items do. The button never tracks the click:
+    /// if it did, it would switch its highlight off when the click ends,
+    /// and the highlight the open panel keeps on it would blink. ⌘-drag,
+    /// which moves the icon, is left to the button.
+    private func watchStatusClicks() {
+        statusClicks = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            let window = event.window.map(ObjectIdentifier.init)
+            let command = event.modifierFlags.contains(.command)
+            let taken = MainActor.assumeIsolated { () -> Bool in
+                guard let self, !command, let button = self.statusItem?.button,
+                      let bw = button.window, window == ObjectIdentifier(bw) else { return false }
+                self.panel?.toggle(below: button)
+                return true
+            }
+            return taken ? nil : event
+        }
     }
 
     @objc private func statusItemClicked() {

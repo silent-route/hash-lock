@@ -55,9 +55,11 @@ final class StatusPanel: NSPanel, NSWindowDelegate {
         DispatchQueue.main.async { [weak self] in self?.invalidateShadow() }
     }
 
-    /// The button is pressed while the panel is open, as a menu's is. Its
-    /// action runs on mouse-up, and the button clears its own highlight once
-    /// that click is done, so it is set again just after.
+    /// The button is pressed while the panel is open, as a menu's is. Mouse
+    /// clicks never reach the button (the app delegate takes them), so
+    /// nothing turns it off. An accessibility press goes through the button,
+    /// which clears its highlight once its action has run: it is set again
+    /// after that.
     private func keepHighlighted() {
         button?.highlight(true)
         DispatchQueue.main.async { [weak self] in
