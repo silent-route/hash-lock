@@ -150,7 +150,9 @@ enum Imports {
             || pb.availableType(from: [.png, .tiff, .pdf]) != nil
     }
 
-    /// File URLs from a drop.
+    /// File URLs from a drop. The providers stay on the main actor, where the
+    /// drop handed them over; only the URLs come back from their callbacks.
+    @MainActor
     static func load(_ providers: [NSItemProvider]) async -> [FileImport] {
         var out: [FileImport] = []
         for p in providers where p.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
